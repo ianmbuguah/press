@@ -12,6 +12,16 @@ app_email = "aditya@frappe.io"
 app_license = "GNU Affero General Public License v3.0"
 version = app_version
 
+# Tile on the Frappe 16 apps screen (/desk); without it Press has no entry there.
+add_to_apps_screen = [
+	{
+		"name": "press",
+		"logo": "/assets/press/images/frappecloud-logo.png",
+		"title": "Press",
+		"route": "/dashboard",
+	}
+]
+
 # Includes in <head>
 # ------------------
 
