@@ -13,7 +13,7 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils.caching import redis_cache
 from frappe.utils.data import add_to_date, now_datetime
-from frappe.utils.telemetry import init_telemetry
+from press.utils.telemetry import init_telemetry  # frappe.utils.telemetry.init_telemetry is gone in v16
 
 from press.access.staff_roles import needs_staff_role
 from press.api.client import dashboard_whitelist

@@ -20,44 +20,59 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
+# Frappe 16 runs on Python 3.14 only. Packages that cannot build or import on newer
+# Pythons keep their original pins below 3.12/3.14 and move to current releases above.
 dependencies = [
-    "ansible==3.4.0",
+    "ansible==3.4.0; python_version < '3.12'",
+    "ansible~=13.0; python_version >= '3.12'",
     "beautifulsoup4",
-    "boto3==1.39.14",
+    "boto3>=1.39.14",
     "certifi>=2026.10.19",
     "Click",
     "coverage",
     "dnspython~=2.8",
     "docker==7.1.0",
     "dockerfile==3.2.0",
-    "oci==2.180.0",
+    # oci 2.180 caps cryptography<47; Frappe 16 ships cryptography 50 / pyOpenSSL 26
+    "oci==2.180.0; python_version < '3.14'",
+    "oci>=2.193.0; python_version >= '3.14'",
     "paramiko==5.1.0",
-    "pexpect==4.8.0",
+    "pexpect>=4.8.0",
     "posthog==3.0.1",
     "prometheus-client==0.19.0",
     "PyGithub==1.44.1",
-    "pyOpenSSL~=25.0.0",
+    "pyOpenSSL>=25.0.0",
     "razorpay>=1.3.0",
-    "requests~=2.32.0",
+    "requests>=2.32.0,<3",
     "responses==0.23.1",
     "selenium==4.23.1",
     "semantic-version==2.10.0",
-    "sql_metadata~=2.11.0",
-    "sqlparse~=0.5.0",
-    "stripe~=2.56.0",
+    "sql_metadata>=2.11.0",
+    "sqlparse>=0.5.0",
+    # stripe 2.x vendors an old `six` whose importer breaks on Python 3.12+
+    "stripe~=2.56.0; python_version < '3.12'",
+    "stripe~=7.14; python_version >= '3.12'",
     "tldextract==3.4.4",
     "tomli==2.0.1",
-    "tqdm==4.66.3",
+    "tqdm>=4.66.3",
     "twilio==8.10.3",
-    "wrapt~=1.15.0",
+    "wrapt>=1.15.0",
     "elasticsearch-dsl>=8.0.0,<9.0.0",
     "hcloud==2.26.0",
-    "playwright==1.49.1",
+    # playwright 1.49 pulls greenlet 3.1, which does not build on Python 3.14
+    "playwright==1.49.1; python_version < '3.14'",
+    "playwright>=1.55; python_version >= '3.14'",
     "prometheus-api-client==0.6.0",
     "pydo==0.24.0",
-    "semgrep==1.159.0",
-    "frappe-mcp @ git+https://github.com/frappe/mcp",
+    # semgrep pins opentelemetry~=1.37 / jsonschema~=4.25 (Frappe 16 ships newer). Press only
+    # runs it as a CLI and falls back to `semgrep` on PATH, so install it with pipx on 3.14.
+    "semgrep==1.159.0; python_version < '3.14'",
+    # frappe-mcp pins pydantic~=2.11, which conflicts with Frappe 16 (pydantic~=2.12)
+    # and does not build on Python 3.14; press.mcp falls back to a stub without it.
+    "frappe-mcp @ git+https://github.com/frappe/mcp ; python_version < '3.14'",
     "setuptools==80.9.0",
 ]
 
@@ -93,8 +108,10 @@ version = {attr = "press.__version__"}
 frappe = ">=15.0.0,<17.0.0"
 
 [tool.bench.dev-dependencies]
-cryptography = "~=44.0.1" # same as fc-prod frappe; pyOpenSSL 25.0 needs cryptography below 45
+# This fork targets Frappe 16: these must match the framework's own pins, or
+# `bench setup requirements --dev` downgrades it (bench can't apply per-Python markers here).
+cryptography = "~=50.0.0" # same as Frappe 16 (pyOpenSSL 26.4)
 "moto[all]" = "~=5.0"
-Werkzeug = "==3.1.3" # has to be manually kept same as framework since moto has a loose dependency
+Werkzeug = "==3.1.9" # has to be manually kept same as framework since moto has a loose dependency
 Faker = "==23.2.0"
-freezegun = "==1.2.2"
+freezegun = "~=1.5.5" # same as Frappe 16

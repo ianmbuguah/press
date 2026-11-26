@@ -2,10 +2,36 @@
 # For license information, please see license.txt
 
 import frappe
-import frappe_mcp
 from frappe.utils.data import sbool
 
-mcp = frappe_mcp.MCP("press-mcp")
+try:
+	import frappe_mcp
+except ImportError:
+	# frappe-mcp is not installed on Frappe 16 / Python 3.14 (its pydantic pin conflicts
+	# with the framework). Other modules import helpers from press.mcp.tools, so keep the
+	# package importable with a stand-in whose decorators leave functions unchanged.
+	frappe_mcp = None
+
+
+class _MCPUnavailable:
+	def __init__(self, name):
+		self.name = name
+
+	def register(self, *args, **kwargs):
+		def decorator(fn):
+			def unavailable(*a, **kw):
+				frappe.throw("MCP is not available: the frappe-mcp package is not installed")
+
+			unavailable.__name__ = fn.__name__
+			return frappe.whitelist()(unavailable)
+
+		return decorator
+
+	def tool(self, *args, **kwargs):
+		return lambda fn: fn
+
+
+mcp = frappe_mcp.MCP("press-mcp") if frappe_mcp else _MCPUnavailable("press-mcp")
 
 
 @mcp.register()

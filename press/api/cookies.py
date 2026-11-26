@@ -1,10 +1,20 @@
 import datetime
 import json
+from http.cookies import SimpleCookie
 from urllib.parse import unquote
 
 import frappe
 from frappe.auth import CookieManager
-from frappe.oauth import get_cookie_dict_from_headers
+
+try:
+	from frappe.oauth import get_cookie_dict_from_headers
+except ImportError:
+	# Removed from frappe.oauth in Frappe 16; same behaviour as the v15 helper.
+	def get_cookie_dict_from_headers(r):
+		cookie = SimpleCookie()
+		if r.headers.get("Cookie"):
+			cookie.load(r.headers.get("Cookie"))
+		return cookie
 
 
 @frappe.whitelist(allow_guest=True)

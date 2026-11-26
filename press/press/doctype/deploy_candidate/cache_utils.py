@@ -10,12 +10,15 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Tuple, TypedDict
 
+# Keyword-argument TypedDict syntax was removed in Python 3.13; use the dict form.
 CommandOutput = TypedDict(
 	"CommandOutput",
-	cwd=str,
-	image_tag=str,
-	returncode=int,
-	output=str,
+	{
+		"cwd": str,
+		"image_tag": str,
+		"returncode": int,
+		"output": str,
+	},
 )
 
 

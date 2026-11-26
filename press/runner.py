@@ -1,4 +1,5 @@
 import json
+import sys
 import threading
 import typing
 from collections.abc import Callable
@@ -30,6 +31,23 @@ from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
 if typing.TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
+
+
+def init_ansible_plugin_loader():
+	"""ansible-core 2.15+ needs its collection finder installed before the Python API
+	is used (the CLI does this itself); without it `ansible.builtin.*` modules can't be
+	resolved. ansible-base 2.10 has no such step. Safe to call more than once."""
+	try:
+		from ansible.plugins.loader import init_plugin_loader
+	except ImportError:
+		return
+	from ansible.utils.collection_loader._collection_finder import _AnsibleCollectionFinder
+
+	if not any(isinstance(finder, _AnsibleCollectionFinder) for finder in sys.meta_path):
+		init_plugin_loader()
+
+
+init_ansible_plugin_loader()
 
 # Without it ansible-base 2.10 leaves the connection timeout at 0, so ssh
 # waits only 2s for the sudo prompt and uses no ConnectTimeout.
@@ -160,7 +178,8 @@ class AnsibleCallback(CallbackBase):
 			# Reduce clutter be removing keys already shown elsewhere
 			for key in ("stdout", "stdout_lines", "stderr", "stderr_lines", "msg"):
 				result.pop(key, None)
-			task.result = json.dumps(result, indent=4)
+			# ansible-core 2.19+ puts non-JSON objects (e.g. ErrorSummary under "exception") in results
+			task.result = json.dumps(result, indent=4, default=str)
 			task.end = now()
 			task.duration = task.end - task.start
 		else:
@@ -196,7 +215,7 @@ class AnsibleCallback(CallbackBase):
 		job_id = result["ansible_job_id"]
 		task_name = frappe.get_value("Ansible Task", {"play": self.play, "job_id": job_id}, "name")
 		task = frappe.get_doc("Ansible Task", task_name)
-		task.result = json.dumps(result, indent=4)
+		task.result = json.dumps(result, indent=4, default=str)
 		task.duration = now() - task.start
 		task.save(ignore_permissions=True)
 		frappe.db.commit()
